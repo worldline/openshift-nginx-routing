@@ -1,0 +1,77 @@
+<% _(mapping).forEach(mapping, mapping_index){ %>
+upstream <%= app_name %>-<%= namespace %>-<%= mapping_index %> { 
+  <% _(mapping.gears).forEach(gear, key){ %>
+  server<%= gear.public_address %>:<%= gear.public_port %>; 
+  <% }; %>
+}
+<% }; %>
+
+#
+# HTTP server configuration
+#
+server {
+  listen               80;
+  listen               8000;
+  server_name          <%= app_name %>-<%= namespace %>.<%= options.domain %> <% _(aliases).forEach(function(obj, alias){ %><%= alias %> <% }; %>; 
+
+  <% _(mapping).forEach(mapping, mapping_index){ %>
+  location <%= mapping.frontend || '/' %>		{
+    proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header   Host $host;
+    proxy_pass         http://<%= app_name %>-<%= namespace %>-<%= mapping_index %><%= mapping.backend || '/' %>;
+    proxy_http_version 1.1;
+    proxy_set_header   Upgrade $http_upgrade;
+    proxy_set_header   Connection "upgrade";
+  }
+  <% }; %>
+
+  location /nginx_status {
+    stub_status        on;
+    access_log         off;
+    allow              127.0.0.1; 
+    deny               all;
+  }
+}
+
+#
+# HTTPS server configuration
+#
+
+<% _(aliases).forEach(function(aliasObj, alias){ %>
+server {
+  listen               443 ssl;
+  listen               8443 ssl;
+  server_name          <%= alias %> ; 
+
+  proxy_set_header     X-Forwarded-SSL-Client-Cert $ssl_client_cert; 
+
+<% if(aliasObj.alias){ %>
+  ssl_certificate      <%= options.nginxConfigDir %>/<%= app_name %>-<%= namespace %>/<%= alias %>.crt;
+  ssl_certificate_key  <%= options.nginxConfigDir %>/<%= app_name %>-<%= namespace %>/<%= alias %>.key;
+<% }else{ %>
+  ssl_certificate      <%= options.nginxDefaultCertificateFile %>;
+  ssl_certificate_key  <%= options.nginxDefaultPrivateKeyFile %>;
+<% } %>
+
+  ssl_protocols        SSLv3 TLSv1;
+  ssl_ciphers          RSA:!EXPORT:!DH:!LOW:!NULL:+MEDIUM:+HIGH;
+
+  <% _(mapping).forEach(mapping, mapping_index){ %>
+  location <%= mapping.frontend || '/' %>		{
+    proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header   Host $host;
+    proxy_pass         http://<%= app_name %>-<%= namespace %>-<%= mapping_index %><%= mapping.backend || '/' %>;
+    proxy_http_version 1.1;
+    proxy_set_header   Upgrade $http_upgrade;
+    proxy_set_header   Connection "upgrade";
+  }
+  <% }; %>
+
+  location /nginx_status {
+    stub_status        on;
+    access_log         off;
+    allow              127.0.0.1; 
+    deny               all;
+  }
+}
+<% }; %>

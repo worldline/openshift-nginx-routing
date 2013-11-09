@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+
+exports = module.exports = OORouter;
+
+// watch nginx PID file, and when content change, update `this.nginxPid` content.
+fs.watchFile(config.pidFile, function(error){
+  if(error){
+    return console.error('Unable to reload file', config.pidFile, error);
+  }
+  fs.readFile(config.pidFile, function(error, pid){
+    if(error){
+      return console.error('Unable to read file', config.pidFile, error);
+    }
+    config.nginxPid = pid;
+  });
+});
+
+// watch Regexp file, and when content change, update `this.regexp` content.
+fs.watchFile(config.regExpFile, function(error){
+  if(error){
+    return console.error('Unable to reload file', config.regExpFile, error);
+  }
+  fs.readFile(config.regExpFile, function(error, content){
+    if(error){
+      return console.error('Unable to read file', config.regExpFile, error);
+    }
+    config.regExp = new RegExp(content);
+  });
+});
+
+
