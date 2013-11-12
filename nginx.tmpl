@@ -1,10 +1,10 @@
-<% _(mapping).forEach(mapping, mapping_index){ %>
+<% _(mapping).forEach(function(mapping, mapping_index){ %>
 upstream <%= app_name %>-<%= namespace %>-<%= mapping_index %> { 
-  <% _(mapping.gears).forEach(gear, key){ %>
+  <% _(mapping.gears).forEach(function(gear, key){ %>
   server<%= gear.public_address %>:<%= gear.public_port %>; 
-  <% }; %>
+  <% }); %>
 }
-<% }; %>
+<% }); %>
 
 #
 # HTTP server configuration
@@ -12,9 +12,9 @@ upstream <%= app_name %>-<%= namespace %>-<%= mapping_index %> {
 server {
   listen               80;
   listen               8000;
-  server_name          <%= app_name %>-<%= namespace %>.<%= options.domain %> <% _(aliases).forEach(function(obj, alias){ %><%= alias %> <% }; %>; 
+  server_name          <% _(aliases).forEach(function(obj, alias){ %><%= alias %> <% }); %>; 
 
-  <% _(mapping).forEach(mapping, mapping_index){ %>
+  <% _(mapping).forEach(function(mapping, mapping_index){ %>
   location <%= mapping.frontend || '/' %>		{
     proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header   Host $host;
@@ -23,7 +23,7 @@ server {
     proxy_set_header   Upgrade $http_upgrade;
     proxy_set_header   Connection "upgrade";
   }
-  <% }; %>
+  <% }); %>
 
   location /nginx_status {
     stub_status        on;
@@ -45,7 +45,7 @@ server {
 
   proxy_set_header     X-Forwarded-SSL-Client-Cert $ssl_client_cert; 
 
-<% if(aliasObj.alias){ %>
+<% if(aliasObj.ssl){ %>
   ssl_certificate      <%= options.nginxConfigDir %>/<%= app_name %>-<%= namespace %>/<%= alias %>.crt;
   ssl_certificate_key  <%= options.nginxConfigDir %>/<%= app_name %>-<%= namespace %>/<%= alias %>.key;
 <% }else{ %>
@@ -56,7 +56,7 @@ server {
   ssl_protocols        SSLv3 TLSv1;
   ssl_ciphers          RSA:!EXPORT:!DH:!LOW:!NULL:+MEDIUM:+HIGH;
 
-  <% _(mapping).forEach(mapping, mapping_index){ %>
+  <% _(mapping).forEach(function(mapping, mapping_index){ %>
   location <%= mapping.frontend || '/' %>		{
     proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header   Host $host;
@@ -65,7 +65,7 @@ server {
     proxy_set_header   Upgrade $http_upgrade;
     proxy_set_header   Connection "upgrade";
   }
-  <% }; %>
+  <% }); %>
 
   location /nginx_status {
     stub_status        on;
@@ -74,4 +74,4 @@ server {
     deny               all;
   }
 }
-<% }; %>
+<% }); %>

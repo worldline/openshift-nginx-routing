@@ -1,33 +1,46 @@
 #!/usr/bin/env node
 
 var fs = require('fs');
+var Path = require('path');
+var NginxRouting = require('..');
 
-exports = module.exports = OORouter;
+// read configuration file
+var conf=null;
+
+var etcConfigFile = '/etc/openshift/openshift-nginx-routing.conf';
+var localConfigFile = Path.join(__dirname,  '../conf/openshift-nginx-routing.conf');
+
+try{
+  conf = fs.readFileSync(etcConfigFile);
+}catch (error){
+  console.error(error.message, 'Will load configuration from ' + localConfigFile);
+  conf = fs.readFileSync(localConfigFile);
+}
+
+var options = {};
+conf.toString().replace(/\#.*/g, '').split('\n').forEach(function(kv){
+  if(!kv) return;
+  var arr = kv.split('=');
+  if(arr.lenght < 2) return
+
+  // fix multiple equals signs
+  key = arr.shift().trim();
+  value = arr.join('=').trim().replace(/^['"]/, '').replace(/['"]$/, '');
+  options[key] = value;
+});
 
 // watch nginx PID file, and when content change, update `this.nginxPid` content.
-fs.watchFile(config.pidFile, function(error){
+fs.watchFile(options.nginxPidFile, function(error){
   if(error){
-    return console.error('Unable to reload file', config.pidFile, error);
+    return console.error('Unable to reload file', options.nginxPidFile, error);
   }
-  fs.readFile(config.pidFile, function(error, pid){
+  fs.readFile(options.nginxPidFile, function(error, pid){
     if(error){
-      return console.error('Unable to read file', config.pidFile, error);
+      return console.error('Unable to read file', options.nginxPidFile, error);
     }
-    config.nginxPid = pid;
+    options.nginxPid = pid;
   });
 });
 
-// watch Regexp file, and when content change, update `this.regexp` content.
-fs.watchFile(config.regExpFile, function(error){
-  if(error){
-    return console.error('Unable to reload file', config.regExpFile, error);
-  }
-  fs.readFile(config.regExpFile, function(error, content){
-    if(error){
-      return console.error('Unable to read file', config.regExpFile, error);
-    }
-    config.regExp = new RegExp(content);
-  });
-});
-
-
+var nginxRouting = new NginxRouting(options);
+nginxRouting.listenOnActiveMq();
