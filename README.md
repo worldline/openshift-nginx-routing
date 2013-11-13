@@ -133,7 +133,7 @@ Allow ha and custom ssl certificates for your user
 
 ## Use openshift-nginx-routing
 
-    $ scl enable nodejs010 "./bin/nginx-routing"
+    $ scl enable nodejs010 "./bin/openshift-nginx-routing"
 
 ## Use cases
 
