@@ -10,14 +10,13 @@
 
 Edit configuration file in `conf/openshift-nginx-routing.conf`
 
-If you want to run openshift-nginx-routing an an OpenShift Node, change nginx listenging ports in `openshift-nginx-routing.tmpl`
-
 ## Install nginx
 
 http://wiki.nginx.org/Install
 
+If you want to run openshift-nginx-routing an an OpenShift Node, change nginx listenging ports in `openshift-nginx-routing.tmpl`
 
-Generate ssl keys
+Generate ssl keys and certificates
 
     $ cd /etc/ssl/certs/
     $ openssl genrsa -des3 -out server.key.pass 1024
@@ -25,7 +24,7 @@ Generate ssl keys
     $ openssl req -new -key server.key -out server.csr
     $ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
-Change default nginx configuration. It will be served if application is not found:
+Change default nginx configuration. It will served the default index.html when applications are not found:
 
     $ vim /etc/nginx/conf.d/default.conf
     server {
@@ -88,9 +87,9 @@ Change default nginx configuration. It will be served if application is not foun
 
 On the broker, install routing plugin
 
-    $ yum install rubygem-openshift-origin-routing-activemq.noarch
+    $ yum install rubygem-openshift-origin-routing-activemq
 
-Create routing-plugin configuration file
+Create the routing-plugin configuration file
 
     $ cp /etc/openshift/plugins.d/openshift-origin-routing-activemq.conf.example /etc/openshift/plugins.d/openshift-origin-routing-activemq.conf
     $ cat openshift-origin-routing-activemq.conf
@@ -135,16 +134,16 @@ Restart `broker` and `activemq`
     $ /etc/init.d/openshift-broker restart
     $ /etc/init.d/activemq restart
 
-Allow ha and custom ssl certificates for your user
+Allow HA and custom ssl certificates for your user
 
     $ oo-admin-ctl-user -l admin --allowha true
     $ oo-admin-ctl-user -l admin --allowprivatesslcertificates true
 
-## Use openshift-nginx-routing
+## Run openshift-nginx-routing
 
     $ scl enable nodejs010 "./bin/openshift-nginx-routing"
 
-## Use cases
+## Test it
 
 Create an app
 
@@ -183,4 +182,9 @@ Test with curl
 
 Right now openshift-nginx-routing only works with HA applications.
 
-SSL passphrase are not supported.
+SSL passphrase are not supported, because it breaks nginx reload.
+
+openshift-nginx-routing doesn't retrieve endpoints details on startup.
+It should be started with an empty OpenShift and never been restarted, until a REST endpoint is available in the broker.
+
+More informations could be found here : https://lists.openshift.redhat.com/openshift-archives/dev/2013-November/msg00031.html
