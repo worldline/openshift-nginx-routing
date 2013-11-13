@@ -49,7 +49,7 @@ OORouter.prototype.listenOnActiveMq = function(){
     self.client.ack(message.headers['message-id']);
     console.log(message.headers['message-id'] ,message.body.toString());
     var body = yaml.safeLoad(message.body.toString());
-    self.dispatch(body, function(error){
+    self.dispatch(message.headers['message-id'], body, function(error){
       if(error){
         return console.error(message.headers['message-id'], 'Error', error);
       }
@@ -63,7 +63,7 @@ OORouter.prototype.disconnect = function(){
 }
 
 // message coming from activemq_routing_plugin
-OORouter.prototype.dispatch = function(message, cb){
+OORouter.prototype.dispatch = function(id, message, cb){
   var routes = this.routes;
   var id = message[':app_name'] + '-' + message[':namespace'];
   var self = this;
@@ -103,9 +103,12 @@ OORouter.prototype.dispatch = function(message, cb){
         self.removeCertificate(id, message[':alias'], cb);
       }], cb)
     case ':add_ssl':
-      routes[id].aliases[message[':alias']].ssl = message.ssl;
-      routes[id].aliases[message[':alias']].private_key = message.private_key;
-      routes[id].aliases[message[':alias']].pass_phrase = message.pass_phrase;
+      if(message[':pass_phrase']){
+        return console.log('WARN', id, 'pass_phrase is not supported with nginx');
+      }
+      routes[id].aliases[message[':alias']].ssl = message[':ssl'];
+      routes[id].aliases[message[':alias']].private_key = message[':private_key'];
+      routes[id].aliases[message[':alias']].pass_phrase = message[':pass_phrase'];
       return async.parallel([function(cb){
         self.updateConfig(id, routes[id], cb);
       }, function(cb){
@@ -124,7 +127,7 @@ OORouter.prototype.dispatch = function(message, cb){
       var socket = message[':public_address'] + ':' + message[':public_port'];
       if(!/http/.test(message[':protocols'])) return cb();
       if(!/web_framework/.test(message[':types'])) return cb();
-      routes[id].gears = routes[id].gears || [];
+      routes[id].gears = routes[id].gears || {};
       routes[id].gears[socket] = {
         public_port_name: message[':public_port_name'],
         public_address: message[':public_address'],
@@ -157,6 +160,7 @@ OORouter.prototype.updateConfig = function(id, data, cb){
       data.mapping[mapping.frontend].gears.push(gear);
     });
   });
+console.log(data);
   data.mapping = _(data.mapping).values();
   
   var nginxConfigFile = Path.join(this.options.nginxConfigDir, id + '.conf');
@@ -179,7 +183,7 @@ OORouter.prototype.removeConfig = function(id, cb){
 // echo $CERT > ${NGINX_CONF_DIR}/${APP_NAME}-${NAMESPACE}/${ALIAS}.cert
 OORouter.prototype.addCertificate = function(id, alias, route, cb){
   var certificatesDir = Path.join(this.options.nginxConfigDir, id);
-  async.serial([function(cb){
+  async.series([function(cb){
     fs.exists(certificatesDir, function(error, exists){
       if(error){
         return cb(error);
@@ -205,10 +209,26 @@ OORouter.prototype.removeCertificate = function(id, alias, cb){
   var certificatesDir = Path.join(this.options.nginxConfigDir, id);
   async.parallel([function(cb){
     var keyFile = Path.join(certificatesDir, alias + '.key');
-    fs.unlink(keyFile, cb);
+    fs.exists(keyFile, function(error, exists){
+      if(error){
+        return cb(error);
+      }
+      if(!exists){
+        return cb();
+      }
+      fs.unlink(keyFile, cb);
+    });
   }, function(cb){
     var certFile = Path.join(certificatesDir, alias + '.cert');
-    fs.unlink(certFile, cb);
+    fs.exists(certFile, function(error, exists){
+      if(error){
+        return cb(error);
+      }
+      if(!exists){
+        return cb();
+      }
+      fs.unlink(certFile, cb);
+    });
   }], cb);
 }
 
@@ -216,7 +236,7 @@ OORouter.prototype.removeCertificate = function(id, alias, cb){
 // rm -fr ${NGINX_CONF_DIR}/${APP_NAME}-${NAMESPACE}
 OORouter.prototype.removeCertificates = function(id, cb){
   var certificatesDir = Path.join(this.options.nginxConfigDir, id);
-  fs.rimraf(certificatesDir, cb);
+  rimraf(certificatesDir, cb);
 }
 
 // when regexp change, some nginx optionsurations and certificates has to be deleted.

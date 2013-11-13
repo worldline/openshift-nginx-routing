@@ -1,8 +1,6 @@
 <% _(mapping).forEach(function(mapping, mapping_index){ %>
-upstream <%= app_name %>-<%= namespace %>-<%= mapping_index %> { 
-  <% _(mapping.gears).forEach(function(gear, key){ %>
-  server<%= gear.public_address %>:<%= gear.public_port %>; 
-  <% }); %>
+upstream <%= app_name %>-<%= namespace %>-<%= mapping_index %> { <% _(mapping.gears).forEach(function(gear, key){ %>
+  server <%= gear.public_address %>:<%= gear.public_port %>;<% }); %>
 }
 <% }); %>
 
@@ -12,7 +10,7 @@ upstream <%= app_name %>-<%= namespace %>-<%= mapping_index %> {
 server {
   listen               80;
   listen               8000;
-  server_name          <% _(aliases).forEach(function(obj, alias){ %><%= alias %> <% }); %>; 
+  server_name         <% _(aliases).forEach(function(obj, alias){ %> <%= alias %><% }); %>; 
 
   <% _(mapping).forEach(function(mapping, mapping_index){ %>
   location <%= mapping.frontend || '/' %>		{
@@ -41,7 +39,7 @@ server {
 server {
   listen               443 ssl;
   listen               8443 ssl;
-  server_name          <%= alias %> ; 
+  server_name          <%= alias %>; 
 
   proxy_set_header     X-Forwarded-SSL-Client-Cert $ssl_client_cert; 
 
@@ -66,7 +64,6 @@ server {
     proxy_set_header   Connection "upgrade";
   }
   <% }); %>
-
   location /nginx_status {
     stub_status        on;
     access_log         off;
