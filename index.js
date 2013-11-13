@@ -226,7 +226,7 @@ OORouter.prototype.addCertificate = function(id, alias, route, cb){
     var keyFile = Path.join(certificatesDir, alias + '.key');
     fs.writeFile(keyFile, route.aliases[alias].private_key, cb);
   }, function(cb){
-    var certFile = Path.join(certificatesDir, alias + '.cert');
+    var certFile = Path.join(certificatesDir, alias + '.crt');
     fs.writeFile(certFile, route.aliases[alias].ssl, cb);
   }], cb);
 }
