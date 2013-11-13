@@ -16,6 +16,15 @@ If you want to run openshift-nginx-routing an an OpenShift Node, change nginx li
 
 http://wiki.nginx.org/Install
 
+
+Generate ssl keys
+
+    $ cd /etc/ssl/certs/
+    $ openssl genrsa -des3 -out server.key.pass 1024
+    $ openssl rsa -in server.key.pass -out server.key
+    $ openssl req -new -key server.key -out server.csr
+    $ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
 Change default nginx configuration. It will be served if application is not found:
 
     $ vim /etc/nginx/conf.d/default.conf
