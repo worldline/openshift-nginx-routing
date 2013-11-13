@@ -1,5 +1,18 @@
 # openshift-nginx-routing
 
+OpenShift Nginx Routing listen on the Routing SPI and update nginx configurations to point directly to the web endpoints.
+
+Nginx is reloaded without downtime when:
+* creating/deleting an application
+* scaling up/down an application
+* adding/removing alias
+* adding/removing custom certificates
+* adding/removing endpoints
+
+Node Apache, Node Proxy and Gear HA-Proxy and bypassed.
+
+
+
 ## Install
 
     $ git clone https://github.com/Filirom1/openshift-nginx-routing.git
