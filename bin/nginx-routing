@@ -28,19 +28,7 @@ conf.toString().replace(/\#.*/g, '').split('\n').forEach(function(kv){
   value = arr.join('=').trim().replace(/^['"]/, '').replace(/['"]$/, '');
   options[key] = value;
 });
-
-// watch nginx PID file, and when content change, update `this.nginxPid` content.
-fs.watchFile(options.nginxPidFile, function(error){
-  if(error){
-    return console.error('Unable to reload file', options.nginxPidFile, error);
-  }
-  fs.readFile(options.nginxPidFile, function(error, pid){
-    if(error){
-      return console.error('Unable to read file', options.nginxPidFile, error);
-    }
-    options.nginxPid = pid;
-  });
-});
+options.regExp = new RegExp(options.regExp);
 
 var nginxRouting = new NginxRouting(options);
 nginxRouting.listenOnActiveMq();

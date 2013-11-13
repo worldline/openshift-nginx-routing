@@ -6,17 +6,41 @@ var _ = require('underscore');
 var async = require('async');
 var stomp = require('stomp');
 
+
 exports = module.exports = OORouter;
 
 function OORouter(options){
   this.options = options;
   this.routes = {};
-  this.nginxConfigTmpl = fs.readFileSync(Path.join(__dirname, 'nginx.tmpl')).toString();
+  try{
+    this.nginxConfigTmpl = fs.readFileSync('/etc/openshift/openshift-nginx-routing.tmpl').toString();
+  }catch(error){
+    var localTemplateFile = Path.join(__dirname, 'openshift-nginx-routing.tmpl');
+    console.error(error.message, 'Will load nginx template from ' + localTemplateFile);
+    this.nginxConfigTmpl = fs.readFileSync(localTemplateFile).toString();
+  }
 }
 
+// Read PID to reload nginx
+var PID;
+OORouter.prototype.reloadNginx = function(cb){
+  var self = this;
+  fs.readFile(self.options.nginxPidFile, function(error, pid){
+    if(error){
+      return cb(error);
+    }
+    if(!pid.toString()){
+      return cb(new Error('PID file ' + self.options.nginxPidFile + ' is empty.'));
+    }
+    PID = pid.toString();
+    doReloadNginx();
+    cb();
+  });
+};
+
 // send `kill -HUP pid` maximum every seconds, even if this function is called more.
-OORouter.prototype.reloadNginx = _.throttle(function(){
-  process.kill('HUP', this.options.nginxPid);
+var doReloadNginx = _.throttle(function(){
+  process.kill(PID, 'SIGHUP');
 }, 1000, {leading: false, trailing: true});
 
 // Listen on activeMQ, and parse message body from yaml
@@ -35,13 +59,11 @@ OORouter.prototype.listenOnActiveMq = function(){
     self.client.subscribe({
       destination: self.options.activemq_queue,
       ack: 'client'
-    }, function(body, headers){
-       console.log('Subscribed');
-    });
+    }, function(){});
   });
 
   self.client.on('error', function(error_frame) {
-    console.error(error_frame.body);
+    console.error('stomp error', error_frame.body);
     self.disconnect();
   });
 
@@ -53,7 +75,12 @@ OORouter.prototype.listenOnActiveMq = function(){
       if(error){
         return console.error(message.headers['message-id'], 'Error', error);
       }
-      console.log(message.headers['message-id'], 'OK');
+      self.reloadNginx(function(error){
+        if(error){
+          return console.error(message.headers['message-id'], 'Error', error);
+        }
+        console.log(message.headers['message-id'], 'OK');
+      });
     });
   });
 }
@@ -67,6 +94,10 @@ OORouter.prototype.dispatch = function(id, message, cb){
   var routes = this.routes;
   var id = message[':app_name'] + '-' + message[':namespace'];
   var self = this;
+
+  if(!this.options.regExp.test(id)){
+    return cb();
+  }
   switch(message[':action']){
     case ':create_application':
       routes[id] = {
@@ -160,13 +191,11 @@ OORouter.prototype.updateConfig = function(id, data, cb){
       data.mapping[mapping.frontend].gears.push(gear);
     });
   });
-console.log(data);
   data.mapping = _(data.mapping).values();
   
   var nginxConfigFile = Path.join(this.options.nginxConfigDir, id + '.conf');
   var nginxConfig = _.template(this.nginxConfigTmpl, _.extend({options: this.options}, data));
 
-console.log('write', nginxConfigFile, nginxConfig);
   fs.writeFile(nginxConfigFile, nginxConfig, cb);
 }
 
