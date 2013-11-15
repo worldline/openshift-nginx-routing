@@ -9,7 +9,7 @@ Nginx is reloaded without downtime when:
 * adding/removing custom certificates
 * adding/removing endpoints
 
-Node Apache, Node Proxy and Gear HA-Proxy and bypassed.
+Node Apache, Node Proxy and Gear HA-Proxy are bypassed.
 
 
 
