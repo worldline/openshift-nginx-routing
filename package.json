@@ -6,5 +6,12 @@
   "scripts": {
     "start": "bin/openshift-nginx-routing"
   },
-  "license": "Apache"
+  "license": "Apache",
+  "dependencies": {
+    "underscore": "~1.5.2",
+    "async": "~0.2.9",
+    "stomp": "~0.1.1",
+    "rimraf": "~2.2.2",
+    "js-yaml": "~2.1.3"
+  }
 }
