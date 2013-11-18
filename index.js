@@ -350,7 +350,7 @@ OORouter.prototype.retrieveRoutes = function(cb){
               self.dispatch(id, message, cb);
             }], function(error){
               if(error){
-                console.error(error);
+                return console.error(id, error);
               }
               console.log(id, 'OK');
             });
