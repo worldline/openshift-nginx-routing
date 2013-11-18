@@ -5,7 +5,8 @@ var yaml = require('js-yaml');
 var _ = require('underscore');
 var async = require('async');
 var stomp = require('stomp');
-
+var mongodb = require('mongodb');
+var uuid = require('uuid');
 
 exports = module.exports = OORouter;
 
@@ -45,30 +46,31 @@ var doReloadNginx = _.throttle(function(){
 
 // Listen on activeMQ, and parse message body from yaml
 OORouter.prototype.listenOnActiveMq = function(){
-  this.client = new stomp.Stomp({
+  console.log("listen on activeMq", this.options.activemq_login + '@' + this.options.activemq_host + ':' + this.options.activemq_port)
+  this.stompClient = new stomp.Stomp({
     port: this.options.activemq_port,
     host: this.options.activemq_host,
     login: this.options.activemq_login,
     passcode: this.options.activemq_password,
   });
 
-  this.client.connect();
+  this.stompClient.connect();
   var self = this;
-  self.client.once('connected', function() {
+  self.stompClient.once('connected', function() {
     console.log('Connected. Subscribe on', self.options.activemq_queue)
-    self.client.subscribe({
+    self.stompClient.subscribe({
       destination: self.options.activemq_queue,
-      ack: 'client'
+      ack: 'stompClient'
     }, function(){});
   });
 
-  self.client.on('error', function(error_frame) {
+  self.stompClient.on('error', function(error_frame) {
     console.error('stomp error', error_frame.body);
     self.disconnect();
   });
 
-  self.client.on('message', function(message) {
-    self.client.ack(message.headers['message-id']);
+  self.stompClient.on('message', function(message) {
+    self.stompClient.ack(message.headers['message-id']);
     console.log(message.headers['message-id'] ,message.body.toString());
     var body = yaml.safeLoad(message.body.toString());
     self.dispatch(message.headers['message-id'], body, function(error){
@@ -86,7 +88,7 @@ OORouter.prototype.listenOnActiveMq = function(){
 }
 
 OORouter.prototype.disconnect = function(){
-  this.client.disconnect();
+  this.stompClient.disconnect();
 }
 
 // message coming from activemq_routing_plugin
@@ -289,5 +291,72 @@ OORouter.prototype.onRegExpChange = function(cb){
       return cb(error);
     }
     cb();
+  });
+}
+
+// Retrive routes from MongoDB and transform data into routing messages for the dispatch function.
+OORouter.prototype.retrieveRoutes = function(cb){
+  console.log('Retrieve routes from MongoDB');
+  var mongoClient = mongodb.MongoClient;
+  var self = this;
+  mongoClient.connect(this.options.mongodbUrl, function(error, db){
+    if(error){
+      return cb(error);
+    }
+    var collection = db.collection('applications');
+    var stream = collection.find().stream();
+    stream.once('error', function(error){
+      cb(error)
+    });
+    stream.once('end', function(){
+      db.close();
+      self.reloadNginx(function(error){
+        if(error){
+          return cb(error);
+        }
+        cb();
+      });
+    });
+    stream.on('data', function(app){
+      if(!app.ha) return;
+      if(!app.group_instances) return;
+      app.group_instances.forEach(function(group){
+        if(!group.gears) return;
+        group.gears.forEach(function(gear){
+          if(!gear.port_interfaces) return;
+          gear.port_interfaces.forEach(function(portInterface){
+            var id = 'init-' + uuid.v4();
+            async.series([function(cb){
+              // only send :create_application if application doesn't exists
+              if(self.routes[app.name + '-' + app.domain_namespace]) return cb();
+              var message = {};
+              message[':action'] = ':create_application';
+              message[':app_name'] = app.name;
+              message[':namespace'] = app.domain_namespace;
+              console.log(id, message);
+              self.dispatch(id, message, cb);
+            }, function(cb){
+              var message = {};
+              message[':action'] = ':add_gear';
+              message[':app_name'] = app.name;
+              message[':namespace'] = app.domain_namespace;
+              message[':protocols'] = portInterface.protocols;
+              message[':types'] = portInterface.type;
+              message[':mappings'] = portInterface.mappings;
+              message[':public_port'] = portInterface.external_port;
+              message[':public_port_name'] = portInterface.cartridge_name;
+              message[':public_address'] = gear.server_identity;
+              console.log(id, message);
+              self.dispatch(id, message, cb);
+            }], function(error){
+              if(error){
+                console.error(error);
+              }
+              console.log(id, 'OK');
+            });
+          });
+        });
+      });
+    });
   });
 }

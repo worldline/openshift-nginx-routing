@@ -31,4 +31,9 @@ conf.toString().replace(/\#.*/g, '').split('\n').forEach(function(kv){
 options.regExp = new RegExp(options.regExp);
 
 var nginxRouting = new NginxRouting(options);
-nginxRouting.listenOnActiveMq();
+nginxRouting.retrieveRoutes(function(error){
+  if(error){
+    console.error(error);
+  }
+  nginxRouting.listenOnActiveMq();
+});
