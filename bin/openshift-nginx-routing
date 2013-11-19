@@ -2,7 +2,27 @@
 
 var fs = require('fs');
 var Path = require('path');
+var program = require('commander');
+var _ = require('underscore');
 var NginxRouting = require('..');
+
+program
+  .version(require('../package.json').version)
+  .option('-v, --verbose', 'print debug information')
+  .option('-o, --stdout <file>', 'send sdtout to file')
+  .option('-e, --stderr <file>', 'send sdterr to file')
+  .option('-p, --pidfile <file>', 'pidfile location')
+  .parse(process.argv);
+
+function changeConsole(options){
+  if(options.stdout){
+    console._stdout = fs.createWriteStream(options.stdout, { encoding: 'utf8', flags   : 'a+' });
+  }
+  
+  if(options.stderr){
+    console._stderr = fs.createWriteStream(options.stderr, { encoding: 'utf8', flags   : 'a+' });
+  }
+}
 
 // read configuration file
 var conf=null;
@@ -13,6 +33,7 @@ var localConfigFile = Path.join(__dirname,  '../conf/openshift-nginx-routing.con
 try{
   conf = fs.readFileSync(etcConfigFile);
 }catch (error){
+  changeConsole(program);
   console.error(error.message, 'Will load configuration from ' + localConfigFile);
   conf = fs.readFileSync(localConfigFile);
 }
@@ -29,6 +50,13 @@ conf.toString().replace(/\#.*/g, '').split('\n').forEach(function(kv){
   options[key] = value;
 });
 options.regExp = new RegExp(options.regExp);
+options = _.extend({}, options, program);
+
+changeConsole(options);
+
+if(options.pidfile){
+  fs.writeFileSync(options.pidfile, '' + process.pid);
+}
 
 var nginxRouting = new NginxRouting(options);
 nginxRouting.retrieveRoutes(function(error){
