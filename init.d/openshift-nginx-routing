@@ -21,6 +21,7 @@
 
 prog=openshift-nginx-routing
 router=/usr/bin/openshift-nginx-routing
+routerdir=/usr/lib64/openshift-nginx-routing/
 pidfile=${PIDFILE-/var/run/openshift-nginx-routing.pid}
 lockfile=${LOCKFILE-/var/lock/openshift-nginx-routing}
 logfile=${LOGFILE-/var/log/openshift-nginx-routing.log}
@@ -31,7 +32,12 @@ OPTIONS="--stdout ${logfile} --stderr ${logfile} --pidfile=${pidfile}"
 start() {
         if [ ! -f "$lockfile" ] ; then
           echo -n $"Starting $prog: "
-          $router $OPTIONS &
+          pushd $routerdir > /dev/null
+            scl enable nodejs010 "npm install -q > /dev/null"
+            RETVAL=$?
+          popd > /dev/null
+
+          scl enable nodejs010 "$router $OPTIONS" &
           sleep 1
           checkpid `cat $pidfile` && echo_success || echo_failure 
           RETVAL=$?

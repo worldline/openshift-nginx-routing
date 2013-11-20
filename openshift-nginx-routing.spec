@@ -24,6 +24,9 @@ Generate nginx configurations files and reload nginx with receiving routes from 
 %__mkdir -p %{buildroot}%{routerdir}
 %__cp -r * %{buildroot}%{routerdir}
 
+%__mkdir -p %{buildroot}%{_bindir}
+ln -s %{routerdir}/bin/%{name} %{buildroot}%{_bindir}/%{name}
+
 %__mkdir -p %{buildroot}%{_sysconfdir}
 %__cp conf/%{name}.conf %{buildroot}%{_sysconfdir}
 
@@ -42,6 +45,7 @@ Generate nginx configurations files and reload nginx with receiving routes from 
 %config(noreplace) %{_sysconfdir}/%{name}.conf
 
 %{routerdir}
+%{_bindir}/%{name}
 
 #TODO systemd
 %{_initddir}/%{name}
