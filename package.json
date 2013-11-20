@@ -1,6 +1,6 @@
 {
   "name": "openshift-nginx-routing",
-  "version": "0.0.1",
+  "version": "0.2.1",
   "description": "An openshift Nginx router implementation. Based on activemq_routing_plugin",
   "main": "index.js",
   "scripts": {
