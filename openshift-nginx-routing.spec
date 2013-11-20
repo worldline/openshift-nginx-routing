@@ -1,7 +1,7 @@
 %global routerdir %{_libdir}/openshift-nginx-routing
 
 Name:           openshift-nginx-routing
-Version:        0.1
+Version:        0.2
 Release:        1%{?dist}
 Summary:        Generate nginx configurations files and reload nginx with receiving routes from the OpenShift Routing SPI
 Source0:        https://github.com/worldline/%{name}/archive/master.tar.gz
@@ -44,4 +44,7 @@ Generate nginx configurations files and reload nginx with receiving routes from 
 %{_initddir}/%{name}
 
 %changelog
+* Wed Nov 20 2013 Filirom1 <filirom1@gmail.com> 0.2-1
+- new package built with tito
+
 
