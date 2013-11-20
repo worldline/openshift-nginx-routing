@@ -33,7 +33,7 @@ OORouter.prototype.reloadNginx = function(cb){
     if(!pid.toString()){
       return cb(new Error('PID file ' + self.options.nginxPidFile + ' is empty.'));
     }
-    PID = pid.toString();
+    PID = pid.toString().replace(/\n/, '');
     doReloadNginx();
     cb();
   });
@@ -41,7 +41,7 @@ OORouter.prototype.reloadNginx = function(cb){
 
 // send `kill -HUP pid` maximum every seconds, even if this function is called more.
 var doReloadNginx = _.throttle(function(){
-  process.kill(PID, 'SIGHUP');
+  process.send({action: 'reloadNginx', pid: PID});
 }, 1000, {leading: false, trailing: true});
 
 // Listen on activeMQ, and parse message body from yaml

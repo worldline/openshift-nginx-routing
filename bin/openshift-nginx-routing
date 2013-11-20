@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var cluster = require('cluster');
 var fs = require('fs');
 var Path = require('path');
 var program = require('commander');
@@ -52,20 +53,38 @@ conf.toString().replace(/\#.*/g, '').split('\n').forEach(function(kv){
 options.regExp = new RegExp(options.regExp);
 options = _.extend({}, options, program);
 
-changeConsole(options);
-
-if(options.pidfile){
-  fs.writeFileSync(options.pidfile, '' + process.pid);
-}
-
-var nginxRouting = new NginxRouting(options);
-nginxRouting.retrieveRoutes(function(error){
-  if(error){
-    console.error(error);
+// Only root is allowed to send SIGHUP to nginx
+if (cluster.isMaster) {
+  if(options.pidfile){
+    fs.writeFileSync(options.pidfile, process.pid.toString());
   }
-  nginxRouting.listenOnActiveMq();
-});
 
-process.on('SIGHUP', function() {
-  // Do not die on hup signal
-});
+  process.on('SIGHUP', function() {
+    // Do not die on hup signal
+  });
+
+  var worker = cluster.fork();
+  worker.on('exit', function(worker, code, signal) {
+    console.error('Worker died.');
+    process.exit(code);
+  });
+
+  worker.on('message', function(msg){
+    if(msg.action=='reloadNginx'){
+      console.log('Reload Nginx (' + msg.pid + ')');
+      process.kill(msg.pid, 'SIGHUP');
+    }
+  });
+}else{
+  // Run all the important stuff with a non root-user
+  changeConsole(options);
+  process.setgid(options.gid);
+  process.setuid(options.uid);
+  var nginxRouting = new NginxRouting(options);
+  nginxRouting.retrieveRoutes(function(error){
+    if(error){
+      console.error(error);
+    }
+    nginxRouting.listenOnActiveMq();
+  });
+}

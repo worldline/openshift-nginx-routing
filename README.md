@@ -3,6 +3,7 @@
 OpenShift Nginx Routing listen on the Routing SPI and update nginx configurations to point directly to the web endpoints.
 
 Nginx is reloaded without downtime when:
+* openshift-nginx-routing starts and retrieve endpoints from mongodb
 * creating/deleting an application
 * scaling up/down an application
 * adding/removing alias
@@ -10,8 +11,6 @@ Nginx is reloaded without downtime when:
 * adding/removing endpoints
 
 Node Apache, Node Proxy and Gear HA-Proxy are bypassed.
-
-
 
 ## Install
 
@@ -36,6 +35,10 @@ Generate ssl keys and certificates
     $ openssl rsa -in server.key.pass -out server.key
     $ openssl req -new -key server.key -out server.csr
     $ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
+Authorise openshift-nginx-router to write nginx conf
+
+    $ chown -R nginx. /etc/nginx/conf.d/
 
 Change default nginx configuration. It will served the default index.html when applications are not found:
 
@@ -95,6 +98,7 @@ Change default nginx configuration. It will served the default index.html when a
     
     }
 
+To debug nginx `tail -f /var/log/nginx/error.log`
 
 ## Setup OpenShift Routing SPI
 
@@ -190,14 +194,12 @@ Test with curl
 
     $ curl -k -H "Host: alias.com" https://localhost
 
-
 ## Note
 
 Right now openshift-nginx-routing only works with HA applications.
 
 SSL passphrase are not supported, because it breaks nginx reload.
 
-openshift-nginx-routing doesn't retrieve endpoints details on startup.
-It should be started with an empty OpenShift and never been restarted, until a REST endpoint is available in the broker.
+openshift-nginx-routing retrieve endpoints details on startup on MongoDB.
 
-More informations could be found here : https://lists.openshift.redhat.com/openshift-archives/dev/2013-November/msg00031.html
+More informations could be found here : https://lists.openshift.redhat.com/openshift-archives/dev/2013-November/msg00057.html
