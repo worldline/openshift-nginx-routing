@@ -1,7 +1,7 @@
 %global routerdir %{_libdir}/openshift-nginx-routing
 
 Name:           openshift-nginx-routing
-Version:        0.3
+Version:        0.4
 Release:        1%{?dist}
 Summary:        Generate nginx configurations files and reload nginx with receiving routes from the OpenShift Routing SPI
 Source0:        https://github.com/worldline/%{name}/archive/master.tar.gz
@@ -52,6 +52,9 @@ ln -s %{routerdir}/bin/%{name} %{buildroot}%{_bindir}/%{name}
 %{_sysconfdir}/logrotate.d/%{name}
 
 %changelog
+* Wed Nov 20 2013 Filirom1 <filirom1@gmail.com> 0.4-1
+- install bin and create node_modules (filirom1@gmail.com)
+
 * Wed Nov 20 2013 Filirom1 <filirom1@gmail.com> 0.3-1
 - add logrotate script (filirom1@gmail.com)
 - typo (filirom1@gmail.com)
