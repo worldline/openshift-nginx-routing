@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# openshift-nginx-routing        Startup script for the Openshift Nginx routing
+#
+# chkconfig: - 85 15
+# description: OpenShift Nginx Router, based on the Routing SPI
+# processname: openshift-nginx-routing
+# config: /etc/openshift/openshift-nginx-routing.conf
+# pidfile: /var/run/openshift-nginx-routing.pid
+#
+### BEGIN INIT INFO
+# Provides: openshift-nginx-routing
+# Required-Start: $local_fs $remote_fs $network $named
+# Required-Stop: $local_fs $remote_fs $network
+# Should-Start: distcache
+# Short-Description: start and stop Openshift Nginx Router
+# Description: The OpenShift Nginx Router
+### END INIT INFO
+
+. /etc/rc.d/init.d/functions
+
+prog=openshift-nginx-routing
+router=/usr/bin/openshift-nginx-routing
+pidfile=${PIDFILE-/var/run/openshift-nginx-routing.pid}
+lockfile=${LOCKFILE-/var/lock/openshift-nginx-routing}
+logfile=${LOGFILE-/var/log/openshift-nginx-routing.log}
+RETVAL=0
+
+OPTIONS="--stdout ${logfile} --stderr ${logfile} --pidfile=${pidfile}"
+
+start() {
+        if [ ! -f "$lockfile" ] ; then
+          echo -n $"Starting $prog: "
+          $router $OPTIONS &
+          sleep 1
+          checkpid `cat $pidfile` && echo_success || echo_failure 
+          RETVAL=$?
+          [ $RETVAL = 0 ] && touch ${lockfile}
+          echo
+          return $RETVAL
+        else
+          echo "$router is already locked '$lockfile'"
+          RETVAL=1
+        fi
+}
+
+stop() {
+	echo -n $"Stopping $prog: "
+	if [ -e ${pidfile} ]; then
+	  killproc -p ${pidfile} $router
+	else
+	  echo -n "(already stopped)"
+	  success
+	fi
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  status)
+        status -p ${pidfile} $router
+	RETVAL=$?
+	;;
+  restart)
+	stop
+	start
+	;;
+  *)
+	echo $"Usage: $prog {start|stop|restart|status}"
+	RETVAL=2
+esac
+
+exit $RETVAL

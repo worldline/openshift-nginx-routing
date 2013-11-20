@@ -65,3 +65,7 @@ nginxRouting.retrieveRoutes(function(error){
   }
   nginxRouting.listenOnActiveMq();
 });
+
+process.on('SIGHUP', function() {
+  // Do not die on hup signal
+});
