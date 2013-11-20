@@ -3,7 +3,7 @@
 OpenShift Nginx Routing listen on the Routing SPI and update nginx configurations to point directly to the web endpoints.
 
 Nginx is reloaded without downtime when:
-* openshift-nginx-routing starts and retrieve endpoints from mongodb
+* it starts and retrieves endpoints from mongodb
 * creating/deleting an application
 * scaling up/down an application
 * adding/removing alias
@@ -36,7 +36,7 @@ Generate ssl keys and certificates
     $ openssl req -new -key server.key -out server.csr
     $ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
-Authorise openshift-nginx-router to write nginx conf
+Authorize openshift-nginx-routing to write nginx configuration files.
 
     $ chown -R nginx. /etc/nginx/conf.d/
 
