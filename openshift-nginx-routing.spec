@@ -32,6 +32,9 @@ Generate nginx configurations files and reload nginx with receiving routes from 
 %__mv %{buildroot}%{routerdir}/init.d/* %{buildroot}%{_initddir}
 %__rm -rf %{buildroot}%{routerdir}/init.d
 
+%__mkdir -p %{buildroot}%{_sysconfdir}/logrotate.d
+%__mv %{buildroot}%{routerdir}/logrotate.d/* %{buildroot}%{_sysconfdir}/logrotate.d/
+%__rm -rf %{buildroot}%{routerdir}/logrotate.d
 
 %files
 %doc %{routerdir}/LICENSE
@@ -42,6 +45,7 @@ Generate nginx configurations files and reload nginx with receiving routes from 
 
 #TODO systemd
 %{_initddir}/%{name}
+%{_sysconfdir}/logrotate.d/%{name}
 
 %changelog
 * Wed Nov 20 2013 Filirom1 <filirom1@gmail.com> 0.2-1

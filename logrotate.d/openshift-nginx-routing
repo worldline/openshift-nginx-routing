@@ -1,0 +1,10 @@
+/var/log/openshift-nginx-routing.log {
+        daily
+        missingok
+        rotate 52
+        compress
+        delaycompress
+        notifempty
+        copytruncate
+}
+
