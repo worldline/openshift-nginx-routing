@@ -29,6 +29,7 @@ ln -s %{routerdir}/bin/%{name} %{buildroot}%{_bindir}/%{name}
 
 %__mkdir -p %{buildroot}%{_sysconfdir}
 %__cp conf/%{name}.conf %{buildroot}%{_sysconfdir}
+%__cp %{name}.tmpl %{buildroot}%{_sysconfdir}
 
 #TODO systemd
 %__mkdir -p %{buildroot}%{_initddir}
@@ -43,6 +44,7 @@ ln -s %{routerdir}/bin/%{name} %{buildroot}%{_bindir}/%{name}
 %doc %{routerdir}/LICENSE
 %doc %{routerdir}/README.md
 %config(noreplace) %{_sysconfdir}/%{name}.conf
+%config(noreplace) %{_sysconfdir}/%{name}.tmpl
 
 %{routerdir}
 %{_bindir}/%{name}

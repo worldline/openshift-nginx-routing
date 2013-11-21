@@ -28,7 +28,7 @@ function changeConsole(options){
 // read configuration file
 var conf=null;
 
-var etcConfigFile = '/etc/openshift/openshift-nginx-routing.conf';
+var etcConfigFile = '/etc/openshift-nginx-routing.conf';
 var localConfigFile = Path.join(__dirname,  '../conf/openshift-nginx-routing.conf');
 
 try{

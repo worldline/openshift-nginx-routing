@@ -14,7 +14,7 @@ function OORouter(options){
   this.options = options;
   this.routes = {};
   try{
-    this.nginxConfigTmpl = fs.readFileSync('/etc/openshift/openshift-nginx-routing.tmpl').toString();
+    this.nginxConfigTmpl = fs.readFileSync('/etc/openshift-nginx-routing.tmpl').toString();
   }catch(error){
     var localTemplateFile = Path.join(__dirname, 'openshift-nginx-routing.tmpl');
     console.error(error.message, 'Will load nginx template from ' + localTemplateFile);
