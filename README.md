@@ -194,6 +194,11 @@ Test with curl
 
     $ curl -k -H "Host: alias.com" https://localhost
 
+## Generate rpm
+
+    $ yum install tito
+    $ tito build --rpm --test
+
 ## Note
 
 Right now openshift-nginx-routing only works with HA applications.
@@ -203,3 +208,5 @@ SSL passphrase are not supported, because it breaks nginx reload.
 openshift-nginx-routing retrieve endpoints details on startup on MongoDB.
 
 More informations could be found here : https://lists.openshift.redhat.com/openshift-archives/dev/2013-November/msg00057.html
+
+Not tested on Fedora (TODO systemd init files)
