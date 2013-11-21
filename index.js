@@ -60,13 +60,12 @@ OORouter.prototype.listenOnActiveMq = function(){
     console.log('Connected. Subscribe on', self.options.activemq_queue)
     self.stompClient.subscribe({
       destination: self.options.activemq_queue,
-      ack: 'stompClient'
+      ack: 'client'
     }, function(){});
   });
 
   self.stompClient.on('error', function(error_frame) {
     console.error('stomp error', error_frame.body);
-    self.disconnect();
   });
 
   self.stompClient.on('message', function(message) {
@@ -318,24 +317,25 @@ OORouter.prototype.retrieveRoutes = function(cb){
       });
     });
     stream.on('data', function(app){
-      if(!app.ha) return;
-      if(!app.group_instances) return;
-      app.group_instances.forEach(function(group){
-        if(!group.gears) return;
-        group.gears.forEach(function(gear){
-          if(!gear.port_interfaces) return;
-          gear.port_interfaces.forEach(function(portInterface){
-            var id = 'init-' + uuid.v4();
-            async.series([function(cb){
-              // only send :create_application if application doesn't exists
-              if(self.routes[app.name + '-' + app.domain_namespace]) return cb();
-              var message = {};
-              message[':action'] = ':create_application';
-              message[':app_name'] = app.name;
-              message[':namespace'] = app.domain_namespace;
-              console.log(id, message);
-              self.dispatch(id, message, cb);
-            }, function(cb){
+      // only send :create_application if application doesn't exists
+      if(self.routes[app.name + '-' + app.domain_namespace]) return dispatchAddGear();
+      var message = {};
+      message[':action'] = ':create_application';
+      message[':app_name'] = app.name;
+      message[':namespace'] = app.domain_namespace;
+
+      var idCreateApp = 'init-' + uuid.v4();
+      console.log(idCreateApp, message);
+      self.dispatch(idCreateApp, message, dispatchAddGear);
+
+      function dispatchAddGear(){
+        if(!app.group_instances) return;
+        app.group_instances.forEach(function(group){
+          if(!group.gears) return;
+          group.gears.forEach(function(gear){
+            if(!gear.port_interfaces) return;
+            gear.port_interfaces.forEach(function(portInterface){
+              var id = 'init-' + uuid.v4();
               var message = {};
               message[':action'] = ':add_gear';
               message[':app_name'] = app.name;
@@ -347,16 +347,16 @@ OORouter.prototype.retrieveRoutes = function(cb){
               message[':public_port_name'] = portInterface.cartridge_name;
               message[':public_address'] = gear.server_identity;
               console.log(id, message);
-              self.dispatch(id, message, cb);
-            }], function(error){
-              if(error){
-                return console.error(id, error);
-              }
-              console.log(id, 'OK');
+              self.dispatch(id, message, function(error){
+                if(error){
+                  return console.error(id, error);
+                }
+                console.log(id, 'OK');
+              });
             });
           });
         });
-      });
+      }
     });
   });
 }
