@@ -55,6 +55,7 @@ options = _.extend({}, options, program);
 
 // Only root is allowed to send SIGHUP to nginx
 if (cluster.isMaster) {
+  changeConsole(program);
   if(options.pidfile){
     fs.writeFileSync(options.pidfile, process.pid.toString());
   }
