@@ -1,0 +1,26 @@
+#!/usr/bin/env oo-ruby
+require 'json'
+require '/var/www/openshift/broker/config/environment'
+
+Rails.configuration.msg_broker[:rpc_options][:timeout] = 600
+gear_map = OpenShift::ApplicationContainerProxy.get_all_gears_endpoints
+gear_map.each { |gear_uuid, endpoints|
+  app, gear = Application.find_by_gear_uuid(gear_uuid.to_s)
+  endpoints.each { |endpoint|
+    pi = gear.port_interfaces.find_by(external_port: endpoint['external_port']) rescue nil
+    if not pi
+      pi = PortInterface.new(
+        cartridge_name: endpoint['cartridge_name'], 
+        external_port: endpoint['external_port'],
+        internal_address: endpoint['internal_address'],
+        internal_port: endpoint['internal_port'],
+        protocols: endpoint['protocols'],
+        type: endpoint['type'],
+        mappings: endpoint['mappings']
+      )
+      gear.port_interfaces.push(pi)
+      puts "Publish endpoint #{endpoint}"
+      pi.publish_endpoint(app) if app.ha
+    end
+  }
+}

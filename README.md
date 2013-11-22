@@ -199,6 +199,13 @@ Test with curl
     $ yum install tito
     $ tito build --rpm --test
 
+## Update mongodb applications
+
+If your OpenShift instances was created before the Routing SPI, and updated recently. MongoDB data does not contains group_instances.
+You will have to upgrade mongodb data by calling the script, on the broker:
+
+    $ ./scripts/oo-admin-ctl-routes
+
 ## Note
 
 Right now openshift-nginx-routing only works with HA applications.
