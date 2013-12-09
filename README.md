@@ -1,6 +1,6 @@
 # openshift-nginx-routing
 
-OpenShift Nginx Routing listen on the Routing SPI and update nginx configurations to point directly to the web endpoints.
+OpenShift Nginx Routing listen on the Routing SPI(ActiveMQ) and update nginx configurations to point directly to the web endpoints.
 
 Nginx is reloaded without downtime when:
 * it starts and retrieves endpoints from mongodb
